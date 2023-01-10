@@ -1,0 +1,132 @@
+#include <REGX52.H>
+#include <intrins.h>
+
+sbit led1=	0x90; 
+sbit led2=	0x91;
+sbit led3=	0x92;
+sbit led4=	0x93;
+sbit led5=	0x94; 
+sbit led6=	0x95;
+sbit led7=	0x96;
+/*****************************************************************
+数码管控制
+*****************************************************************/
+sbit keyup10day =    0xA0;
+sbit keyup1day =     0xA1;
+sbit keydown1day =   0xA2;
+sbit keyup1hours =   0xA3;
+sbit keydown1hours = 0xA4;
+sbit keyup5min =     0xA5;
+/*****************************************************************
+按键控制         
+*****************************************************************/
+
+int day,hours,min,s,ms;//声明变量
+
+unsigned char code duanma[10]=
+	{
+	0x03,//0
+	0x9f,//1
+	0x25,//2
+	0x0d,//3
+	0x99,//4
+	0x49,//5
+	0x41,//6
+	0x1f,//7
+	0x01,//8
+	0x09,//9
+	};   
+//0-9段码表
+
+int timeDelay()  //计算时间
+ {
+	TMOD=0x01; //使用计时器0
+	TH0=64535/256;//高8位
+	TL0=64535%256;//低8位
+	TR0 = 1;
+  ms = 0;
+	for (day=0;day>=0;day--)
+	 {
+	 for (hours= 0;hours>=0;hours--)
+		 {
+		 for (min= 0;min>=0;min--)
+			 {
+			 for (s=0;s>=0;s--)
+				 {
+				  while (TF0==0)
+						{
+						TH0=64535/256;
+						TL0=64535%256;
+						TF0 = 0 ;//清溢出
+						ms++;
+						} 
+						if (ms == 1000)
+						{
+						s--;//-1秒
+						ms = 0;//置位
+						}
+				}
+				min--;//-1分
+				s = s+60;//置位
+			 }
+		 }
+		hours--;//-1时
+		min = min+60;//置位
+	 }
+	day--;//-1天
+	hours = hours+24;//置位
+	 
+return day,hours,min;
+ }
+/*******************************************************
+计算时间函数
+ ******************************************************/
+int timeCalculate ()//按键控制
+{
+	if (keyup10day == 0){day = day +10;}
+	if (keyup1day == 0){day = day +1;}
+	if (keydown1day == 0){day = day -1;}
+	if (keyup1hours == 0){day = hours +1;}
+	if (keydown1hours == 0){day = hours -1;}
+	if (keyup5min == 0){day = min +5;}
+	//此处可修改时间
+}
+void timeDisplay()   //时间显示
+{
+	int day_hundred,day_ten,day_one;
+	int hours_ten,hours_one;
+	int min_ten,min_one;
+	
+	timeDelay();
+	
+	day_hundred = duanma[day/100];//天数显示
+	day_ten = duanma[day%100/10];
+	day_one = duanma[day_ten%10];
+	
+	hours_ten = duanma[hours/10];//小时显示
+	hours_one = duanma[hours%10];
+	
+	min_ten = duanma[min/10];//分钟显示
+	min_one = duanma[min%10];
+	
+	//数码管扫描
+	led1 = day_hundred;
+	_nop_();
+	led2 = day_ten;
+	_nop_();
+	led3 = day_one;
+	_nop_();
+	led4 = hours_ten;
+	_nop_();
+	led5 = hours_one;
+	_nop_();
+	led6 = min_ten;
+	_nop_();
+	led7 = min_one;
+	_nop_();
+}
+void main()//主函数
+{
+	timeCalculate();
+	timeDisplay();
+}
